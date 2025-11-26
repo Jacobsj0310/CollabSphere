@@ -1,33 +1,21 @@
-package com.CollabSphere.CollabSphere.Entity;
+package com.CollabSphere.CollabSphere.DTO;
 
-import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
-@Entity
-@Table(name = "admins")
-public class Admin {
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class AdminDTO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false,unique = true)
     private Long userId;
-
-    @Column(nullable = false)
     private String email;
-
-    private String role = "ADMIN";
-
-    private Instant createdAt = Instant.now();
-
-    public Admin() {}
-
-    public Admin(Long userId) {
-        this.userId = userId;
-        this.role = "ADMIN";
-    }
+    private String role;
+    private Instant createdAt;
 
     public Long getId() {
         return id;

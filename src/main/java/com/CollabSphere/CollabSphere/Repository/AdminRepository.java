@@ -1,4 +1,4 @@
 package com.CollabSphere.CollabSphere.Repository;
 
-public class UserRepository {
+public interface AdminRepository {
 }

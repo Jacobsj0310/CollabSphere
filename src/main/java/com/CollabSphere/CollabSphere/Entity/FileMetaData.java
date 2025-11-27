@@ -1,2 +1,4 @@
-package com.CollabSphere.CollabSphere.Entity;public class FileMetaData {
+package com.CollabSphere.CollabSphere.Entity;
+
+public class FileMetaData {
 }

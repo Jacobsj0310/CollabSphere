@@ -1,7 +1,6 @@
 package com.CollabSphere.CollabSphere.Entity;
 
 import jakarta.persistence.*;
-
 import java.time.Instant;
 
 @Entity

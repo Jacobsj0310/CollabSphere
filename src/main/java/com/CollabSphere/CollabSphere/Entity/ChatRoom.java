@@ -10,7 +10,7 @@ import java.util.Set;
             @Index(columnList = "workspaceId"),
             @Index(columnList = "createdBy")
     })
-    public class Chat {
+    public class ChatRoom {
 
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)

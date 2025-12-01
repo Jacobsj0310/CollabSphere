@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+
 import java.time.Instant;
 
 @Data
@@ -18,7 +19,16 @@ public class AdminDTO {
     private String email;
     private String role;
     private Instant createdAt;
-    
+
+    public AdminDTO(Long id, Long userId, String role, String email, Instant createdAt) {
+        this.id = id;
+        this.userId = userId;
+        this.email = email;
+        this.role= role;
+        this.createdAt = createdAt;
+    }
+
+
 
     public Long getId() {
         return id;

@@ -4,6 +4,7 @@ import com.CollabSphere.CollabSphere.Entity.ChatRoom;
 import com.CollabSphere.CollabSphere.Entity.User;
 import com.CollabSphere.CollabSphere.Repository.ChatRoomRepository;
 import com.CollabSphere.CollabSphere.Repository.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -12,73 +13,84 @@ import java.util.Optional;
 @Repository
 public class UserServiceImp1 implements UserService{
 
+    private final UserRepository userRepository;
 
-        private UserRepository userRepository;
 
-        public void UserServiceImpl(UserRepository userRepository) {
-            this.userRepository = userRepository;
+    public UserServiceImp1(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
+    @Override
+    @Transactional
+    public User createUser(User user) {
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            throw new RuntimeException("Email is required");
         }
-
-        @Override
-        public User createUser(User user) {
-
-            // simple duplicate check
-            if (userRepository.existsByEmail(user.getEmail())) {
-                throw new RuntimeException("Email already used");
-            }
-            if (userRepository.existsByUsername(user.getUsername())) {
-                throw new RuntimeException("Username already used");
-            }
-
-            return userRepository.save(user);
+        if (user.getUsername() == null || user.getUsername().isBlank()) {
+            throw new RuntimeException("Username is required");
         }
-
-        @Override
-        public User updateUser(Long id, User user) {
-            User existing = userRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("User Not Found"));
-
-            if (user.getUsername() != null) {
-                existing.setUsername(user.getUsername());
-            }
-
-            if (user.getEmail() != null) {
-                existing.setEmail(user.getEmail());
-            }
-
-            if (user.getPassword() != null) {
-                existing.setPassword(user.getPassword());
-            }
-
-            return userRepository.save(existing);
+        if (userRepository.existsByEmail(user.getEmail())) {
+            throw new RuntimeException("Email already in use");
         }
-
-        @Override
-        public void deleteUser(Long id) {
-            if (!userRepository.existsById(id)) {
-                throw new RuntimeException("User Not Found");
-            }
-            userRepository.deleteById(id);
+        if (userRepository.existsByUsername(user.getUsername())) {
+            throw new RuntimeException("Username already in use");
         }
+        // NOTE: password should be encoded in production (configure PasswordEncoder in SecurityConfig)
+        if (user.getPassword() == null || user.getPassword().isBlank()) {
+            throw new RuntimeException("Password is required");
+        }
+        return userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public User updateUser(Long id, User updates) {
+        User existing = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        if (updates.getUsername() != null && !updates.getUsername().isBlank()
+                && !updates.getUsername().equals(existing.getUsername())) {
+            if (userRepository.existsByUsername(updates.getUsername())) {
+                throw new RuntimeException("Username already in use");
+            }
+            existing.setUsername(updates.getUsername());
+        }
+        if (updates.getEmail() != null && !updates.getEmail().isBlank()
+                && !updates.getEmail().equals(existing.getEmail())) {
+            if (userRepository.existsByEmail(updates.getEmail())) {
+                throw new RuntimeException("Email already in use");
+            }
+            existing.setEmail(updates.getEmail());
+        }
+        if (updates.getPassword() != null && !updates.getPassword().isBlank()) {
+            existing.setPassword(updates.getPassword()); // in prod encode
+        }
+        return userRepository.save(existing);
+    }
+
+    @Override
+    @Transactional
+    public void deleteUser(Long id) {
+        if (!userRepository.existsById(id)) throw new RuntimeException("User not found");
+        userRepository.deleteById(id);
+    }
 
     @Override
     public Optional<User> getById(Long id) {
-        return Optional.empty();
+        return userRepository.findById(id);
     }
 
     @Override
     public List<User> getAll() {
-        return List.of();
+        return userRepository.findAll();
     }
 
     @Override
     public Optional<User> findByEmail(String email) {
-        return Optional.empty();
+        return userRepository.findByEmail(email);
     }
 
     @Override
     public Optional<User> findByUsername(String username) {
-        return Optional.empty();
+        return userRepository.findByUsername(username);
     }
 
     @Override
@@ -87,17 +99,17 @@ public class UserServiceImp1 implements UserService{
     }
 
     @Override
-        public User getUserById(Long id) {
-            return userRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("User Not Found"));
-        }
-
-        @Override
-        public List<User> getAllUsers() {
-            return userRepository.findAll();
-        }
+    public User getUserById(Long id) {
+        return null;
+    }
 
 
+
+
+    @Override
+    public List<User> getAllUsers() {
+        return List.of();
+    }
 
 
 }

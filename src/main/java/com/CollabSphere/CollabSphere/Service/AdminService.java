@@ -7,7 +7,6 @@ import com.CollabSphere.CollabSphere.Repository.AdminRepository;
 /*import jakarta.transaction.Transactional;*/
 import org.springframework.transaction.annotation.Transactional;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,12 +14,15 @@ import java.util.Optional;
 
 @Service
 @Transactional
-@RequiredArgsConstructor
-
 
 public class AdminService{
-
     private final AdminRepository adminRepository;
+
+    // Explicit constructor injection (works even if Lombok/annotation processing is not set up)
+    public AdminService(AdminRepository adminRepository) {
+        this.adminRepository = adminRepository;
+    }
+
     public Admin createAdmin(AdminDTO dto) {
         Optional<Admin> existing = adminRepository.findByUserId(dto.getUserId());
         if (existing.isPresent()) {
@@ -28,7 +30,6 @@ public class AdminService{
         }
 
         Admin admin = new Admin();
-
 
         if (dto.getId() != null) {
             admin.setId(dto.getId());

@@ -3,6 +3,7 @@ package com.CollabSphere.CollabSphere.Controller;
 import com.CollabSphere.CollabSphere.Entity.AiMessage;
 import com.CollabSphere.CollabSphere.Service.AiMessageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -10,10 +11,15 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/ai/messages")
-@RequiredArgsConstructor
+
 
 public class AiChatController {
+    @Autowired
     private final AiMessageService aiMessageService;
+
+    public AiChatController(AiMessageService aiMessageService) {
+        this.aiMessageService = aiMessageService;
+    }
 
     // Create/save new AI message
     @PostMapping

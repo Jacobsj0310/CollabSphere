@@ -4,6 +4,7 @@ import com.CollabSphere.CollabSphere.DTO.ChatRoomRequestDTO;
 import com.CollabSphere.CollabSphere.DTO.ParticipantRequestDTO;
 import com.CollabSphere.CollabSphere.Entity.ChatRoom;
 import com.CollabSphere.CollabSphere.Service.ChatRoomService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,6 +14,7 @@ import java.util.List;
 @RequestMapping("/api/chats")
 public class ChatRoomController {
 
+    @Autowired
     private final ChatRoomService chatRoomService;
 
 
@@ -41,16 +43,18 @@ public class ChatRoomController {
 
 //    @GetMapping("/{id}")
 //    public ResponseEntity<ChatRoom> get(@PathVariable Long id) {
-//        return ChatRoomService.getChatRoomById(id)
+//        return ChatRoomService.getByChatRoomId(id)
 //                .map(ResponseEntity::ok)
 //                .orElse(ResponseEntity.notFound().build());
 //    }
-    @GetMapping("/{id}")
-    public ResponseEntity<ChatRoom> get(@PathVariable Long id) {
-        return chatRoomService.getChatRoomById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+@GetMapping("/{id}")
+public ResponseEntity<ChatRoom> get(@PathVariable Long id) {
+    ChatRoom room = chatRoomService.getByChatRoomId(id);
+    if (room == null) {
+        return ResponseEntity.notFound().build();
     }
+    return ResponseEntity.ok(room);
+}
 
     @GetMapping("/workspace/{workspaceId}")
     public ResponseEntity<List<ChatRoom>> listByWorkspace(@PathVariable Long workspaceId) {

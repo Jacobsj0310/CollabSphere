@@ -7,6 +7,8 @@ import com.CollabSphere.CollabSphere.Repository.ChatRoomRepository;
 import com.CollabSphere.CollabSphere.Repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -22,13 +24,18 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     }
 
     @Override
-    public ChatRoom createChatRoom(ChatRoom chatRoom) {
-        // initialize participant count and createdAt will be handled by entity @PrePersist
+    public ChatRoom createChatRoom(ChatRoomRequestDTO dto) {
+        ChatRoom chatRoom = new ChatRoom();
+        chatRoom.setName(dto.getName());
+        chatRoom.setCreatedAt(Instant.now());
+        chatRoom.setCreatedBy(dto.getCreatedBy());
         return chatRoomRepository.save(chatRoom);
     }
 
+
+
     @Override
-    public ChatRoom getChatRoomById(Long id) {
+    public ChatRoom getByChatRoomId(Long id) {
         return chatRoomRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("ChatRoom not found: " + id));
     }
@@ -41,7 +48,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     @Override
     @Transactional
     public ChatRoom addParticipant(Long chatRoomId, Long userId) {
-        ChatRoom chatRoom = getChatRoomById(chatRoomId);
+        ChatRoom chatRoom = getByChatRoomId(chatRoomId);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
         chatRoom.addParticipant(user);
@@ -51,7 +58,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     @Override
     @Transactional
     public ChatRoom removeParticipant(Long chatRoomId, Long userId) {
-        ChatRoom chatRoom = getChatRoomById(chatRoomId);
+        ChatRoom chatRoom = getByChatRoomId(chatRoomId);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
         chatRoom.removeParticipant(user);

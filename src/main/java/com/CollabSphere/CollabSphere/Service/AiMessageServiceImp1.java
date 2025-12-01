@@ -5,17 +5,23 @@ import com.CollabSphere.CollabSphere.Repository.AiMessageRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-@RequiredArgsConstructor
+
 @Service
 public class AiMessageServiceImp1 implements AiMessageService{
 
+    @Autowired
     private  final AiMessageRepository aiMessageRepository;
+
+    public AiMessageServiceImp1(AiMessageRepository aiMessageRepository) {
+        this.aiMessageRepository = aiMessageRepository;
+    }
 
     @Override
     @Transactional

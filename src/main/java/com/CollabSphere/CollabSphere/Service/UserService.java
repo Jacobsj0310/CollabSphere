@@ -7,11 +7,12 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 
-@Service
+
 public interface UserService {
     User createUser(User user);
     User updateUser(Long id, User updates);
     void deleteUser(Long id);
+
 
     Optional<User> getById(Long id);
     List<User> getAll();
@@ -21,10 +22,8 @@ public interface UserService {
 
     boolean existsById(Long id);
 
+
     User getUserById(Long id);
 
     List<User> getAllUsers();
-
-
-
 }

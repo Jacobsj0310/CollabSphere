@@ -1,4 +1,4 @@
 package com.CollabSphere.CollabSphere.Enum;
 
-public class ChatRoom {
+public enum ChatRoom {
 }

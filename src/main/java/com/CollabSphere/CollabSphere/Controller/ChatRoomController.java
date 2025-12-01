@@ -3,7 +3,6 @@ package com.CollabSphere.CollabSphere.Controller;
 import com.CollabSphere.CollabSphere.DTO.ChatRoomRequestDTO;
 import com.CollabSphere.CollabSphere.DTO.ParticipantRequestDTO;
 import com.CollabSphere.CollabSphere.Entity.ChatRoom;
-import com.CollabSphere.CollabSphere.Repository.UserRepository;
 import com.CollabSphere.CollabSphere.Service.ChatRoomService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -40,9 +39,15 @@ public class ChatRoomController {
         return ResponseEntity.noContent().build();
     }
 
+//    @GetMapping("/{id}")
+//    public ResponseEntity<ChatRoom> get(@PathVariable Long id) {
+//        return ChatRoomService.getChatRoomById(id)
+//                .map(ResponseEntity::ok)
+//                .orElse(ResponseEntity.notFound().build());
+//    }
     @GetMapping("/{id}")
     public ResponseEntity<ChatRoom> get(@PathVariable Long id) {
-        return ChatRoomService.getChatRoomById(id)
+        return chatRoomService.getChatRoomById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

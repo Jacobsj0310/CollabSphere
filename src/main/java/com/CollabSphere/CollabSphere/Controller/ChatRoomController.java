@@ -1,7 +1,10 @@
 package com.CollabSphere.CollabSphere.Controller;
 
 import com.CollabSphere.CollabSphere.DTO.ChatRoomRequestDTO;
+import com.CollabSphere.CollabSphere.DTO.ParticipantRequestDTO;
 import com.CollabSphere.CollabSphere.Entity.ChatRoom;
+import com.CollabSphere.CollabSphere.Repository.UserRepository;
+import com.CollabSphere.CollabSphere.Service.ChatRoomService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,8 +16,10 @@ public class ChatRoomController {
 
     private final ChatRoomService chatRoomService;
 
+
     public ChatRoomController(ChatRoomService chatRoomService) {
         this.chatRoomService = chatRoomService;
+
     }
 
     @PostMapping
@@ -37,7 +42,7 @@ public class ChatRoomController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ChatRoom> get(@PathVariable Long id) {
-        return chatRoomService.getById(id)
+        return ChatRoomService.getChatRoomById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -48,7 +53,7 @@ public class ChatRoomController {
     }
 
     @PostMapping("/{id}/participants")
-    public ResponseEntity<Void> addParticipant(@PathVariable Long id, @RequestBody ParticipantRequest req) {
+    public ResponseEntity<Void> addParticipant(@PathVariable Long id, @RequestBody ParticipantRequestDTO req) {
         chatRoomService.addParticipant(id, req.getUserId());
         return ResponseEntity.ok().build();
     }

@@ -109,6 +109,7 @@ import java.util.Set;
         }
 
         public Instant getLastMessageAt() {
+
             return lastMessageAt;
         }
 

@@ -9,7 +9,7 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "message")
-public class Message {
+public class AiMessage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
 
@@ -33,7 +33,7 @@ public class Message {
 
     private Instant createdAt = Instant.now();
 
-    public Message(){ }
+    public AiMessage(){ }
 
     public Long getId() {
         return id;

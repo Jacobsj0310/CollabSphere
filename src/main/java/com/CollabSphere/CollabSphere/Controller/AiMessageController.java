@@ -2,7 +2,6 @@ package com.CollabSphere.CollabSphere.Controller;
 
 import com.CollabSphere.CollabSphere.Entity.AiMessage;
 import com.CollabSphere.CollabSphere.Service.AiMessageService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,12 +11,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/ai/messages")
 
-
-public class AiChatController {
+public class AiMessageController {
     @Autowired
     private final AiMessageService aiMessageService;
 
-    public AiChatController(AiMessageService aiMessageService) {
+    public AiMessageController(AiMessageService aiMessageService) {
         this.aiMessageService = aiMessageService;
     }
 
@@ -51,7 +49,7 @@ public class AiChatController {
     }
 
     // Get messages in a chat room
-    @GetMapping("/chatrooms/{chatRoomId}")
+    @GetMapping("/chatroom's/{chatRoomId}")
     public ResponseEntity<List<AiMessage>> getMessagesByChatRoom(@PathVariable Long chatRoomId) {
         List<AiMessage> messages = aiMessageService.getMessagesByChatRoom(chatRoomId);
         return ResponseEntity.ok(messages);
@@ -63,6 +61,8 @@ public class AiChatController {
         List<AiMessage> messages = aiMessageService.getMessagesBySender(senderId);
         return ResponseEntity.ok(messages);
     }
+
+
 
 
 }

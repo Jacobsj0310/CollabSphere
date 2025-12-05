@@ -6,49 +6,84 @@ import java.util.List;
 
 @Data
 public class TeamDTO {
-    private Long id;                // team ID (optional for create)
-    private String name;            // team name
-    private String description;     // team description
-    private Long adminId;           // user ID of the admin/creator
-    private List<Long> memberIds;   // list of user IDs in the team
+    @Data
+    public static class TeamRequest {
+        private String name;                 // Team name
+        private String description;          // Team description
+        private List<String> memberEmails;   // List of member emails to add
 
-    public Long getId() {
-        return id;
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public void setDescription(String description) {
+            this.description = description;
+        }
+
+        public List<String> getMemberEmails() {
+            return memberEmails;
+        }
+
+        public void setMemberEmails(List<String> memberEmails) {
+            this.memberEmails = memberEmails;
+        }
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    //  2. RESPONSE DTO
+    @Data
+    public static class TeamResponse {
+        private Long id;                      // Team ID
+        private String name;                  // Team name
+        private String description;           // Team description
+        private String adminEmail;            // Admin email (team owner)
+        private List<String> memberEmails; // List of all team member
 
-    public String getName() {
-        return name;
-    }
+        public Long getId() {
+            return id;
+        }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+        public void setId(Long id) {
+            this.id = id;
+        }
 
-    public String getDescription() {
-        return description;
-    }
+        public String getName() {
+            return name;
+        }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+        public void setName(String name) {
+            this.name = name;
+        }
 
-    public Long getAdminId() {
-        return adminId;
-    }
+        public String getDescription() {
+            return description;
+        }
 
-    public void setAdminId(Long adminId) {
-        this.adminId = adminId;
-    }
+        public void setDescription(String description) {
+            this.description = description;
+        }
 
-    public List<Long> getMemberIds() {
-        return memberIds;
-    }
+        public String getAdminEmail() {
+            return adminEmail;
+        }
 
-    public void setMemberIds(List<Long> memberIds) {
-        this.memberIds = memberIds;
+        public void setAdminEmail(String adminEmail) {
+            this.adminEmail = adminEmail;
+        }
+
+        public List<String> getMemberEmails() {
+            return memberEmails;
+        }
+
+        public void setMemberEmails(List<String> memberEmails) {
+            this.memberEmails = memberEmails;
+        }
     }
 }

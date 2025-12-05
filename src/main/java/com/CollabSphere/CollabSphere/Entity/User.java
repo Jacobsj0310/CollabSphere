@@ -1,6 +1,7 @@
 package com.CollabSphere.CollabSphere.Entity;
 
 import com.CollabSphere.CollabSphere.Enum.RoleType;
+import jakarta.annotation.Resource;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -28,4 +29,6 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private RoleType roleType;  // ADMIN / MEMBER
+
+
 }

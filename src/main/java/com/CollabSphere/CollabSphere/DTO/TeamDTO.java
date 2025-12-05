@@ -2,6 +2,7 @@ package com.CollabSphere.CollabSphere.DTO;
 
 import lombok.Data;
 
+import java.time.Instant;
 import java.util.List;
 
 @Data
@@ -84,6 +85,21 @@ public class TeamDTO {
 
         public void setMemberEmails(List<String> memberEmails) {
             this.memberEmails = memberEmails;
+        }
+
+        public void setUpdatedAt(Instant updatedAt) {
+        }
+
+        public void setCreatedAt(Instant createdAt) {
+        }
+
+        public void setOwnerName(String s) {
+        }
+
+        public void setOwnerId(Long aLong) {
+        }
+
+        public void setMemberCount(int i) {
         }
     }
 }

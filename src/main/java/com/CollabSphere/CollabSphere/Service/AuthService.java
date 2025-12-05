@@ -17,13 +17,20 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
+
 public class AuthService implements AuthServiceInterface {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JWTUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
+
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JWTUtil jwtUtil, AuthenticationManager authenticationManager) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
+        this.authenticationManager = authenticationManager;
+    }
 
     @Override
     public Optional<User> findByEmail(String email) {

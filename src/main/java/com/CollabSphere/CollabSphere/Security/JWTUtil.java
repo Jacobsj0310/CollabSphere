@@ -11,9 +11,6 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-/**
- * JWT utility — now a Spring component so it can be injected.
- */
 @Component
 public class JWTUtil {
 

@@ -20,10 +20,6 @@ public class TeamController {
 
     private final TeamService teamService;
 
-    /**
-     * Create a new team.
-     * Owner is set to the authenticated user (email from Authentication).
-     */
     @PostMapping
     public ResponseEntity<TeamResponse> createTeam(@Valid @RequestBody TeamRequest request,
                                                    Authentication authentication) {

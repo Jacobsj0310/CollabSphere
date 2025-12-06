@@ -18,13 +18,13 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class TeamService implements TeamServiceInterface {
+
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
 
-    // Helper: map entity -> DTO
+
     private TeamDTO.TeamResponse toDto(Team t) {
         TeamDTO.TeamResponse dto = new TeamDTO.TeamResponse();
-
         dto.setId(t.getId());
         dto.setName(t.getName());
         dto.setDescription(t.getDescription());
@@ -52,6 +52,13 @@ public class TeamService implements TeamServiceInterface {
         // add owner as a member
         team.getMembers().add(owner);
 
+        // add invited members (by email) if provided
+        if (request.getMemberEmails() != null && !request.getMemberEmails().isEmpty()) {
+            for (String email : request.getMemberEmails()) {
+                userRepository.findByEmail(email).ifPresent(team.getMembers()::add);
+            }
+        }
+
         Team saved = teamRepository.save(team);
         return toDto(saved);
     }
@@ -69,12 +76,8 @@ public class TeamService implements TeamServiceInterface {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        // simple approach: find teams where user is a member
-        List<Team> teams = teamRepository.findAll()
-                .stream()
-                .filter(team -> team.getMembers().stream().anyMatch(u -> u.getId().equals(user.getId())))
-                .collect(Collectors.toList());
-
+        // Use repository method to fetch teams where this user is a member
+        List<Team> teams = teamRepository.findByMembers_Id(user.getId());
         return teams.stream().map(this::toDto).collect(Collectors.toList());
     }
 
@@ -95,6 +98,22 @@ public class TeamService implements TeamServiceInterface {
 
         team.setName(request.getName());
         team.setDescription(request.getDescription());
+
+        // Optionally update members: if request.memberEmails provided, replace members set (keeping owner)
+        if (request.getMemberEmails() != null) {
+            User owner = team.getOwner();
+            team.getMembers().clear();
+            if (owner != null) team.getMembers().add(owner);
+
+            for (String email : request.getMemberEmails()) {
+                userRepository.findByEmail(email).ifPresent(u -> {
+                    if (!u.getId().equals(owner != null ? owner.getId() : -1L)) {
+                        team.getMembers().add(u);
+                    }
+                });
+            }
+        }
+
         Team saved = teamRepository.save(team);
         return toDto(saved);
     }
@@ -131,12 +150,24 @@ public class TeamService implements TeamServiceInterface {
 
         User member = userRepository.findByEmail(memberEmail).orElseThrow(() -> new IllegalArgumentException("Member not found"));
 
-        team.getMembers().add(member);
-        Team saved = teamRepository.save(team);
-        return toDto(saved);
+        // Optional: enforce team size limit (e.g. 20)
+        int MAX_MEMBERS = 20;
+        if (team.getMembers().size() >= MAX_MEMBERS) {
+            throw new IllegalStateException("Team member limit reached");
+        }
+
+        boolean alreadyMember = team.getMembers().stream().anyMatch(u -> u.getId().equals(member.getId()));
+        if (!alreadyMember) {
+            team.getMembers().add(member);
+            Team saved = teamRepository.save(team);
+            return toDto(saved);
+        } else {
+            return toDto(team);
+        }
     }
 
     @Transactional
+    @Override
     public TeamDTO.TeamResponse removeMember(Long teamId, String memberEmail, String requesterEmail) {
         Team team = teamRepository.findById(teamId).orElseThrow(() -> new IllegalArgumentException("Team not found"));
         User requester = userRepository.findByEmail(requesterEmail).orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -150,8 +181,17 @@ public class TeamService implements TeamServiceInterface {
 
         User member = userRepository.findByEmail(memberEmail).orElseThrow(() -> new IllegalArgumentException("Member not found"));
 
-        team.getMembers().removeIf(u -> u.getId().equals(member.getId()));
-        Team saved = teamRepository.save(team);
-        return toDto(saved);
+        // Prevent removing owner via this method
+        if (team.getOwner() != null && team.getOwner().getId().equals(member.getId())) {
+            throw new IllegalArgumentException("Cannot remove team owner");
+        }
+
+        boolean removed = team.getMembers().removeIf(u -> u.getId().equals(member.getId()));
+        if (removed) {
+            Team saved = teamRepository.save(team);
+            return toDto(saved);
+        } else {
+            return toDto(team); // no-op if not member
+        }
     }
 }

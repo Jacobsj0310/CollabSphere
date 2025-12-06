@@ -2,6 +2,7 @@ package com.CollabSphere.CollabSphere.Security;
 
 import com.CollabSphere.CollabSphere.Entity.Team;
 import com.CollabSphere.CollabSphere.Entity.User;
+import com.CollabSphere.CollabSphere.Repository.TeamMemberRepository;
 import com.CollabSphere.CollabSphere.Repository.TeamRepository;
 import com.CollabSphere.CollabSphere.Repository.UserRepository;
 
@@ -39,17 +40,20 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
     private final UserRepository userRepository;
     private final TeamRepository teamRepository;
+    private final TeamMemberRepository teamMemberRepository; // stored so we can use it if needed
 
     private static final Pattern TEAM_PATTERN = Pattern.compile("^/api/teams/(\\d+)(/.*)?$");
 
     public JWTAuthenticationFilter(JWTUtil jwtUtil,
                                    UserDetailsService userDetailsService,
                                    UserRepository userRepository,
-                                   TeamRepository teamRepository) {
+                                   TeamRepository teamRepository,
+                                   TeamMemberRepository teamMemberRepository) {
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
         this.userRepository = userRepository;
         this.teamRepository = teamRepository;
+        this.teamMemberRepository = teamMemberRepository; // assign to field
     }
 
     @Override
@@ -83,6 +87,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
                         // load user entity to check membership/ownership
                         Optional<User> optUser = userRepository.findByEmail(username);
                         if (optUser.isEmpty()) {
+                            log.debug("User entity not found for email: {}", username);
                             response.sendError(HttpServletResponse.SC_FORBIDDEN, "User not found");
                             return;
                         }
@@ -90,19 +95,27 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
 
                         Optional<Team> optTeam = teamRepository.findById(teamId);
                         if (optTeam.isEmpty()) {
+                            log.debug("Team not found: {}", teamId);
                             response.sendError(HttpServletResponse.SC_NOT_FOUND, "Team not found");
                             return;
                         }
                         Team team = optTeam.get();
 
                         boolean isOwner = team.getOwner() != null && team.getOwner().getId().equals(user.getId());
-                        boolean isMember = team.getMembers() != null && team.getMembers().stream()
+
+                        // Option A: check members collection (if team.members is eagerly available)
+                        boolean isMemberFromEntity = team.getMembers() != null && team.getMembers().stream()
                                 .anyMatch(u -> u.getId().equals(user.getId()));
+
+                        // Option B: check membership via TeamMemberRepository (uncomment/use if you have such a table)
+                        // boolean isMemberFromRepo = teamMemberRepository.isMember(teamId, user.getId());
+                        // (Implement isMember in repo or use an appropriate query method)
+
                         boolean isAdmin = userDetails.getAuthorities().stream()
                                 .map(GrantedAuthority::getAuthority)
                                 .anyMatch(a -> a.equals("ROLE_ADMIN"));
 
-                        if (!(isOwner || isMember || isAdmin)) {
+                        if (!(isOwner || isMemberFromEntity || isAdmin /*|| isMemberFromRepo */)) {
                             log.debug("Access denied for user {} to team {}", username, teamId);
                             response.sendError(HttpServletResponse.SC_FORBIDDEN, "You are not a member/owner of this team");
                             return;
@@ -113,7 +126,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
             }
         } catch (Exception ex) {
             log.error("Error in JWTAuthenticationFilter: {}", ex.getMessage(), ex);
-            // If something unexpected occurs, do not set authentication — let downstream handle (or fail)
+            // Do not set authentication if errors — downstream handlers will manage response if necessary
         }
 
         filterChain.doFilter(request, response);
@@ -123,12 +136,12 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
     private String resolveToken(String header) {
         if (!StringUtils.hasText(header)) return null;
         String h = header.trim();
+        // Support both "Bearer token" and raw token
         if (h.toLowerCase().startsWith("bearer ")) {
             return h.substring(7).trim();
         }
         return h;
     }
-
 
     @Nullable
     private Long extractTeamId(String uri) {
@@ -147,6 +160,6 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         // Keep auth endpoints public, allow WS and docs
         return path.startsWith("/api/auth") || path.startsWith("/ws") || path.startsWith("/swagger")
-                || path.startsWith("/v3/api-docs");
+                || path.startsWith("/v3/api-docs") || path.startsWith("/swagger-ui") || "OPTIONS".equalsIgnoreCase(request.getMethod());
     }
 }

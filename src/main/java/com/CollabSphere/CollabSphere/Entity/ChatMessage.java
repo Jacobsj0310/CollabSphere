@@ -1,10 +1,20 @@
 package com.CollabSphere.CollabSphere.Entity;
-
 import com.CollabSphere.CollabSphere.Enum.MessageType;
+
 import jakarta.persistence.*;
+
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+
+@Entity
+@Table(name = "chat_messages")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class ChatMessage {
 
@@ -36,19 +46,24 @@ public class ChatMessage {
     @Enumerated(EnumType.STRING)
     private MessageType type;
 
+    // message deletion flag
+    @Column(nullable = false)
+    private boolean deleted = false;
+
+
     //timestamps
     private Instant createdAt;
     private Instant updatedAt;
 
     @PrePersist
-    protected void CreatedAT(){
+    protected void onCreate(){
         createdAt= Instant.now();
         updatedAt=createdAt;
     }
 
     @PreUpdate
 
-    void UpdatedAt(){
+    void onUpdate(){
             updatedAt=Instant.now();
     }
 

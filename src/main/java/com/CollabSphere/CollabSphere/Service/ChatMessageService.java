@@ -13,6 +13,8 @@ import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import com.CollabSphere.CollabSphere.Enum.MessageType;
+
 
 @Service
 @Transactional
@@ -64,14 +66,16 @@ public class ChatMessageService implements ChatMessageServiceInterface {
         }
 
         // Map DTO type to entity enum (default TEXT)
-        ChatMessage.MessageType type = ChatMessage.MessageType.TEXT;
+        MessageType type = MessageType.TEXT;
+
         if (dto.getType() != null) {
             try {
-                type = ChatMessage.MessageType.valueOf(dto.getType().toUpperCase());
+                type = MessageType.valueOf(dto.getType().toUpperCase());
             } catch (IllegalArgumentException ignored) {
                 // keep default
             }
         }
+
 
         ChatMessage msg = ChatMessage.builder()
                 .content(dto.getContent())
@@ -87,16 +91,18 @@ public class ChatMessageService implements ChatMessageServiceInterface {
         return toDto(saved);
     }
 
-    @Override
-    public ChatMessageDTO getMessage(Long messageId) {
-        ChatMessage m = chatMessageRepository.findById(messageId)
-                .orElseThrow(() -> new EntityNotFoundException("Message not found"));
+@Override
+public ChatMessageDTO getMessage(Long messageId) {
+    ChatMessage m = chatMessageRepository.findById(messageId)
+            .orElseThrow(() -> new EntityNotFoundException("Message not found"));
 
-        if(m.isDeleted()){
-            throw new EntityNotFoundException("Message not found");
-            return toDto(m);
-        }
+    if (m.isDeleted()) {
+        throw new EntityNotFoundException("Message not found");
     }
+
+    return toDto(m);
+}
+
 
     @Override
     public Page<ChatMessageDTO> getMessagesForTeam(Long teamId, java.awt.print.Pageable pageable) {
@@ -115,13 +121,13 @@ public class ChatMessageService implements ChatMessageServiceInterface {
 
     @Override
     public Page<ChatMessageDTO> getMessagesForTeam(Long teamId, Pageable pageable) {
-        Page<ChatMessage> page = chatMessageRepository.findByTeamIdAndDeletedFalseOrderByCreatedAtAsc(teamId, pageable);
+        Page<ChatMessage> page = chatMessageRepository.findByTeamIdAndDeletedFalseOrderByCreatedAtAsc(teamId, (java.awt.print.Pageable) pageable);
         return page.map(this::toDto);
     }
 
     @Override
     public Page<ChatMessageDTO> getMessagesForChannel(String channel, Pageable pageable) {
-        Page<ChatMessage> page = chatMessageRepository.findByChannelAndDeletedFalseOrderByCreatedAtAsc(channel, pageable);
+        Page<ChatMessage> page = chatMessageRepository.findByChannelAndDeletedFalseOrderByCreatedAtAsc(channel, (java.awt.print.Pageable) pageable);
         return page.map(this::toDto);
     }
 
@@ -133,9 +139,9 @@ public class ChatMessageService implements ChatMessageServiceInterface {
 
         // Permission: author or team owner
 
-        boolean isAuthor = m.getsender()!=null && m.getsender().id.equals(editorUserId);
-        boolean isTeamOwner = m.getteam()! = null && m.getteam().getowner()!=null &&
-                m.getteam().getowner().getid().equals(editorUserId);
+        boolean isAuthor = m.getSender()!=null && m.getSender().getId().equals(editorUserId);
+        boolean isTeamOwner = m.getTeam()!= null && m.getTeam().getOwner()!=null &&
+                m.getTeam().getOwner().getId().equals(editorUserId);
 
 
         if (!isAuthor && !isTeamOwner) {
@@ -144,17 +150,17 @@ public class ChatMessageService implements ChatMessageServiceInterface {
 
         // Update allowed fields (only if present)
         if (dto.getContent() != null) {
-            m.setcontent(dto.getContent());
+            m.setContent(dto.getContent());
         }
         if (dto.getAttachmentUrl() != null) {
-            m.setattachmentUrl(dto.getAttachmentUrl());
+            m.setAttachmentUrl(dto.getAttachmentUrl());
         }
         if (dto.getChannel() != null) {
-            m.setchannel(dto.getChannel());
+            m.setChannel(dto.getChannel());
         }
         if (dto.getType() != null) {
             try {
-                m.settype(ChatMessage.MessageType.valueOf(dto.getType().toUpperCase()));
+                m.setType(MessageType.valueOf(dto.getType().toUpperCase()));
             } catch (IllegalArgumentException ignored) {
                 // ignore invalid type
             }

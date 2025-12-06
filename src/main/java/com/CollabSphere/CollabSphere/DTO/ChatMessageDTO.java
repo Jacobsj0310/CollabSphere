@@ -1,9 +1,10 @@
 package com.CollabSphere.CollabSphere.DTO;
 
 import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
 
 import java.time.Instant;
-
+@Builder
 public class ChatMessageDTO {
 
     // Input (Create/Update)

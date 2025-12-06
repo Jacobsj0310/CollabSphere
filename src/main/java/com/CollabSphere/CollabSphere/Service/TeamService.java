@@ -63,6 +63,11 @@ public class TeamService implements TeamServiceInterface {
         return toDto(saved);
     }
 
+    @Override
+    public TeamDTO.TeamResponse createTeam(TeamDTO.TeamResponse request, String ownerEmail) {
+        return null;
+    }
+
     @Transactional(readOnly = true)
     @Override
     public TeamDTO.TeamResponse getTeam(Long teamId) {

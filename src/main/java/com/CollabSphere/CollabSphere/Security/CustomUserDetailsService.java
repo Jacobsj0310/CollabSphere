@@ -1,6 +1,5 @@
 package com.CollabSphere.CollabSphere.Security;
 
-
 import com.CollabSphere.CollabSphere.Repository.UserRepository;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.*;

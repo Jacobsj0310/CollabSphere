@@ -1,9 +1,7 @@
 package com.CollabSphere.CollabSphere.Entity;
 
-
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 import java.time.Instant;
 
@@ -27,10 +25,12 @@ public class FileStorage {
     private String s3Key;
 
     private String contentType;
+
     private Long size;
 
+    //  Single uploader (matches getUploader() and builder().uploader(...))
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "uploader_id")
+    @JoinColumn(name = "uploader_id")   // FK column in "files" table
     private User uploader;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -42,17 +42,17 @@ public class FileStorage {
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
+
     private Instant updatedAt;
 
-
     @PrePersist
-    public void prePersist(){
-        this.createdAt=Instant.now();
-        this.updatedAt= Instant.now();
+    public void prePersist() {
+        this.createdAt = Instant.now();
+        this.updatedAt = Instant.now();
     }
 
     @PreUpdate
-    public void preUpdate(){
+    public void preUpdate() {   // 🔧 this should be @PreUpdate, not @PrePersist
         this.updatedAt = Instant.now();
     }
 }

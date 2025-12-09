@@ -4,11 +4,12 @@ import com.CollabSphere.CollabSphere.DTO.FileStorageDTO;
 import com.CollabSphere.CollabSphere.Entity.FileStorage;
 import com.CollabSphere.CollabSphere.Entity.Team;
 import com.CollabSphere.CollabSphere.Entity.User;
-import com.CollabSphere.CollabSphere.Interface.FileStorageInterface;
+import com.CollabSphere.CollabSphere.Interface.FileStorageServiceInterface;
 import com.CollabSphere.CollabSphere.Repository.FileStorageRepository;
 import com.CollabSphere.CollabSphere.Repository.TeamMemberRepository;
 import com.CollabSphere.CollabSphere.Repository.TeamRepository;
 import com.CollabSphere.CollabSphere.Repository.UserRepository;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
@@ -30,7 +31,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class FileStorageService implements FileStorageInterface {
+@Service
+public class FileStorageService implements FileStorageServiceInterface {
 
     private final FileStorageRepository fileStorageRepository;
     private final UserRepository userRepository;

@@ -1,7 +1,9 @@
 package com.CollabSphere.CollabSphere.Security;
 
+import com.CollabSphere.CollabSphere.Entity.FileStorage;
 import com.CollabSphere.CollabSphere.Entity.Team;
 import com.CollabSphere.CollabSphere.Entity.User;
+import com.CollabSphere.CollabSphere.Repository.FileStorageRepository;
 import com.CollabSphere.CollabSphere.Repository.TeamMemberRepository;
 import com.CollabSphere.CollabSphere.Repository.TeamRepository;
 import com.CollabSphere.CollabSphere.Repository.UserRepository;
@@ -31,6 +33,17 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * JWTAuthenticationFilter with team- and file-level authorization for CollabSphere.
+ *
+ * - Authenticates requests using JWT (sets SecurityContext)
+ * - If request targets /api/teams/{teamId}/... enforces membership/owner/admin
+ * - If request targets /api/files/... enforces file permissions:
+ *     * GET /api/files/{id}/download  -> uploader OR team member/owner OR admin
+ *     * GET /api/files/{id}/stream    -> same
+ *     * DELETE /api/files/{id}         -> uploader OR team member/owner OR admin
+ *     * GET /api/files/team/{teamId}   -> only team members/owner/admin (listing)
+ */
 @Component
 public class JWTAuthenticationFilter extends OncePerRequestFilter {
 
@@ -40,20 +53,26 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
     private final UserRepository userRepository;
     private final TeamRepository teamRepository;
-    private final TeamMemberRepository teamMemberRepository; // stored so we can use it if needed
+    private final TeamMemberRepository teamMemberRepository;
+    private final FileStorageRepository fileStorageRepository;
 
+    // Patterns
     private static final Pattern TEAM_PATTERN = Pattern.compile("^/api/teams/(\\d+)(/.*)?$");
+    private static final Pattern FILE_BY_ID_PATTERN = Pattern.compile("^/api/files/(\\d+)(/.*)?$");
+    private static final Pattern FILE_TEAM_LIST_PATTERN = Pattern.compile("^/api/files/team/(\\d+)(/.*)?$");
 
     public JWTAuthenticationFilter(JWTUtil jwtUtil,
                                    UserDetailsService userDetailsService,
                                    UserRepository userRepository,
                                    TeamRepository teamRepository,
-                                   TeamMemberRepository teamMemberRepository) {
+                                   TeamMemberRepository teamMemberRepository,
+                                   FileStorageRepository fileStorageRepository) {
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
         this.userRepository = userRepository;
         this.teamRepository = teamRepository;
-        this.teamMemberRepository = teamMemberRepository; // assign to field
+        this.teamMemberRepository = teamMemberRepository;
+        this.fileStorageRepository = fileStorageRepository;
     }
 
     @Override
@@ -81,68 +100,118 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
 
                     log.debug("Authenticated user: {} for request {}", username, request.getRequestURI());
 
-                    // If path targets a team resource, enforce team-level authorization
+                    // Team endpoint check
                     Long teamId = extractTeamId(request.getRequestURI());
                     if (teamId != null) {
-                        // load user entity to check membership/ownership
-                        Optional<User> optUser = userRepository.findByEmail(username);
-                        if (optUser.isEmpty()) {
-                            log.debug("User entity not found for email: {}", username);
-                            response.sendError(HttpServletResponse.SC_FORBIDDEN, "User not found");
-                            return;
-                        }
-                        User user = optUser.get();
-
-                        Optional<Team> optTeam = teamRepository.findById(teamId);
-                        if (optTeam.isEmpty()) {
-                            log.debug("Team not found: {}", teamId);
-                            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Team not found");
-                            return;
-                        }
-                        Team team = optTeam.get();
-
-                        boolean isOwner = team.getOwner() != null && team.getOwner().getId().equals(user.getId());
-
-                        // Option A: check members collection (if team.members is eagerly available)
-                        boolean isMemberFromEntity = team.getMembers() != null && team.getMembers().stream()
-                                .anyMatch(u -> u.getId().equals(user.getId()));
-
-                        // Option B: check membership via TeamMemberRepository (uncomment/use if you have such a table)
-                        // boolean isMemberFromRepo = teamMemberRepository.isMember(teamId, user.getId());
-                        // (Implement isMember in repo or use an appropriate query method)
-
-                        boolean isAdmin = userDetails.getAuthorities().stream()
-                                .map(GrantedAuthority::getAuthority)
-                                .anyMatch(a -> a.equals("ROLE_ADMIN"));
-
-                        if (!(isOwner || isMemberFromEntity || isAdmin /*|| isMemberFromRepo */)) {
-                            log.debug("Access denied for user {} to team {}", username, teamId);
+                        if (!isAllowedForTeam(teamId, username, userDetails)) {
+                            log.debug("Access denied (team) for user {} to team {}", username, teamId);
                             response.sendError(HttpServletResponse.SC_FORBIDDEN, "You are not a member/owner of this team");
                             return;
                         }
-                        // else allowed — continue
+                    }
+
+                    // File endpoint check
+                    Long fileId = extractFileId(request.getRequestURI());
+                    if (fileId != null) {
+                        if (!isAllowedForFile(fileId, username, userDetails)) {
+                            log.debug("Access denied (file) for user {} to file {}", username, fileId);
+                            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Not authorized to access this file");
+                            return;
+                        }
+                    }
+
+                    // Team-file listing endpoint: /api/files/team/{teamId}
+                    Long listTeamId = extractFileTeamListId(request.getRequestURI());
+                    if (listTeamId != null) {
+                        if (!isAllowedForTeam(listTeamId, username, userDetails)) {
+                            log.debug("Access denied (file list) for user {} to team {} files", username, listTeamId);
+                            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Not authorized to list files for this team");
+                            return;
+                        }
                     }
                 }
             }
         } catch (Exception ex) {
             log.error("Error in JWTAuthenticationFilter: {}", ex.getMessage(), ex);
-            // Do not set authentication if errors — downstream handlers will manage response if necessary
+            // do not set authentication on error; downstream will handle
         }
 
         filterChain.doFilter(request, response);
     }
 
-    @Nullable
-    private String resolveToken(String header) {
-        if (!StringUtils.hasText(header)) return null;
-        String h = header.trim();
-        // Support both "Bearer token" and raw token
-        if (h.toLowerCase().startsWith("bearer ")) {
-            return h.substring(7).trim();
+    // -------------------------
+    // Helper: Team check
+    // -------------------------
+    private boolean isAllowedForTeam(Long teamId, String username, UserDetails userDetails) {
+        // load user entity
+        Optional<User> optUser = userRepository.findByEmail(username);
+        if (optUser.isEmpty()) return false;
+        User user = optUser.get();
+
+        // load team
+        Optional<Team> optTeam = teamRepository.findById(teamId);
+        if (optTeam.isEmpty()) return false;
+        Team team = optTeam.get();
+
+        boolean isOwner = team.getOwner() != null && team.getOwner().getId().equals(user.getId());
+        // try fast repo check if available
+        boolean isMember = false;
+        try {
+            isMember = teamMemberRepository.existsByTeamIdAndUserId(teamId, user.getId());
+        } catch (Exception ignored) {
+            // fallback to entity collection if repo not available / configured
+            isMember = team.getMembers() != null && team.getMembers().stream().anyMatch(u -> u.getId().equals(user.getId()));
         }
-        return h;
+
+        boolean isAdmin = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(a -> a.equals("ROLE_ADMIN"));
+
+        return isOwner || isMember || isAdmin;
     }
 
+    // -------------------------
+    // Helper: File check
+    // -------------------------
+    private boolean isAllowedForFile(Long fileId, String username, UserDetails userDetails) {
+        Optional<FileStorage> optFile = fileStorageRepository.findById(fileId);
+        if (optFile.isEmpty()) return false;
+        FileStorage f = optFile.get();
+        if (f.isDeleted()) return false;
+
+        // load user
+        Optional<User> optUser = userRepository.findByEmail(username);
+        if (optUser.isEmpty()) return false;
+        User user = optUser.get();
+
+        // uploader allowed
+        if (f.getUploader() != null && f.getUploader().getId().equals(user.getId())) return true;
+
+        // if file attached to team -> owner or member allowed
+        if (f.getTeam() != null) {
+            Long teamId = f.getTeam().getId();
+            boolean isOwner = f.getTeam().getOwner() != null && f.getTeam().getOwner().getId().equals(user.getId());
+            boolean isMember = false;
+            try {
+                isMember = teamMemberRepository.existsByTeamIdAndUserId(teamId, user.getId());
+            } catch (Exception ignored) {
+                isMember = f.getTeam().getMembers() != null && f.getTeam().getMembers().stream()
+                        .anyMatch(u -> u.getId().equals(user.getId()));
+            }
+            if (isOwner || isMember) return true;
+        }
+
+        // global admin allowed
+        boolean isAdmin = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(a -> a.equals("ROLE_ADMIN"));
+
+        return isAdmin;
+    }
+
+    // -------------------------
+    // URI extractors
+    // -------------------------
     @Nullable
     private Long extractTeamId(String uri) {
         if (uri == null) return null;
@@ -155,10 +224,47 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 
+    @Nullable
+    private Long extractFileId(String uri) {
+        if (uri == null) return null;
+        Matcher m = FILE_BY_ID_PATTERN.matcher(uri);
+        if (m.find()) {
+            try {
+                return Long.parseLong(m.group(1));
+            } catch (NumberFormatException ignored) {}
+        }
+        return null;
+    }
+
+    @Nullable
+    private Long extractFileTeamListId(String uri) {
+        if (uri == null) return null;
+        Matcher m = FILE_TEAM_LIST_PATTERN.matcher(uri);
+        if (m.find()) {
+            try {
+                return Long.parseLong(m.group(1));
+            } catch (NumberFormatException ignored) {}
+        }
+        return null;
+    }
+
+    // -------------------------
+    // Token helpers
+    // -------------------------
+    @Nullable
+    private String resolveToken(String header) {
+        if (!StringUtils.hasText(header)) return null;
+        String h = header.trim();
+        if (h.toLowerCase().startsWith("bearer ")) {
+            return h.substring(7).trim();
+        }
+        return h;
+    }
+
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        // Keep auth endpoints public, allow WS and docs
+        // Keep auth endpoints public, allow WS and docs, and allow preflight
         return path.startsWith("/api/auth") || path.startsWith("/ws") || path.startsWith("/swagger")
                 || path.startsWith("/v3/api-docs") || path.startsWith("/swagger-ui") || "OPTIONS".equalsIgnoreCase(request.getMethod());
     }

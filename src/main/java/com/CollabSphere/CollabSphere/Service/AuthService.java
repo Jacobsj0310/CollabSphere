@@ -1,5 +1,6 @@
 package com.CollabSphere.CollabSphere.Service;
 
+import com.CollabSphere.CollabSphere.DTO.RegisterRequestDTO;
 import com.CollabSphere.CollabSphere.Enum.RoleType;
 import com.CollabSphere.CollabSphere.DTO.AuthRequestDTO;
 import com.CollabSphere.CollabSphere.DTO.AuthResponseDTO;
@@ -8,7 +9,7 @@ import com.CollabSphere.CollabSphere.Interface.AuthServiceInterface;
 import com.CollabSphere.CollabSphere.Repository.UserRepository;
 import com.CollabSphere.CollabSphere.Security.JWTUtil;
 
-import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -43,7 +44,7 @@ public class AuthService implements AuthServiceInterface {
     }
 
     @Override
-    public AuthResponseDTO register(AuthRequestDTO request) {
+    public AuthResponseDTO register(@Valid RegisterRequestDTO request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Email already exists");

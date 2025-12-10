@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="layout :: body">
+<body>
+<h2>Teams</h2>
+<a class="btn btn-primary mb-2" th:href="@{/ui/teams/create}">Create Team</a>
+
+<div class="list-group">
+    <div th:each="t : ${teams}" class="list-group-item">
+        <h5 th:text="${t.name}">Team name</h5>
+        <p th:text="${t.description}">desc</p>
+        <a th:href="@{|/ui/teams/${t.id}|}" class="btn btn-sm btn-outline-primary">Open</a>
+    </div>
+</div>
+</body>
+</html>

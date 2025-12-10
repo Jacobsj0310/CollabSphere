@@ -1,0 +1,52 @@
+/* ========== DASHBOARD HEADER ========== */
+.dashboard-header {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--deep-purple);
+    margin-bottom: 25px;
+}
+
+/* ========== DASHBOARD GRID ========== */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 25px;
+}
+
+/* ========== CARDS ========== */
+.dashboard-card {
+    background: var(--white);
+    padding: 30px;
+    border-radius: 14px;
+    box-shadow: 0 6px 20px rgba(123, 95, 200, 0.15);
+    transition: 0.3s;
+}
+
+.dashboard-card:hover {
+    box-shadow: 0 8px 25px rgba(123, 95, 200, 0.25);
+    transform: translateY(-4px);
+}
+
+/* ========== CARD TITLE ========== */
+.card-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--deep-purple);
+    margin-bottom: 10px;
+}
+
+/* ========== CARD NUMBER ========== */
+.card-number {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--soft-purple);
+}
+
+/* ========== QUICK ACTIONS ========== */
+.quick-actions {
+    margin-top: 35px;
+}
+
+.quick-actions .btn {
+    margin-right: 12px;
+}

@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="layout :: body">
+<body>
+<h2 th:text="${team.name}">Team</h2>
+<p th:text="${team.description}"></p>
+
+<h4>Members</h4>
+<ul>
+    <li th:each="m: ${team.memberEmails}" th:text="${m}">member@example.com</li>
+</ul>
+
+<a class="btn btn-secondary" th:href="@{|/ui/files?teamId=${team.id}|}">Files</a>
+</body>
+</html>
